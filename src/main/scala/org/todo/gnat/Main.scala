@@ -15,15 +15,15 @@ object Main extends LazyLogging {
 
   val usersRepository = new UserRepository
   val tasksRepository = new TaskRepository
-  val tables = Map("users" -> usersRepository.userTableQuery, "tasks" -> usersRepository.userTableQuery)
-  val defaultUsers = List(User("data", "data"), User("root", "root"))
+  val tables = Map("users" -> usersRepository.userTableQuery, "tasks" -> tasksRepository.taskTableQuery)
+  val defaultUsers = List(User("data", "data", isAdmin = true), User("root", "root", isAdmin = true))
 
   def initTables: Unit = {
     tables.keys.foreach(tableCreator)
   }
 
   def tableCreator(tableName: String) = {
-    Await.result(db.run(MTable.getTables(tableName)).flatMap(tasks => if (tasks.isEmpty) {
+    Await.result(db.run(MTable.getTables(tableName)).flatMap(matchedTables => if (matchedTables.isEmpty) {
       logger.info(tableName + " table doesn't exist, creating...")
       db.run(tables(tableName).schema.create)
     } else Future {}).andThen { case _ => logger.info(tableName + " table check finished") }, Duration.Inf)

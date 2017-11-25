@@ -5,7 +5,7 @@ import slick.lifted.Tag
 
 import scala.concurrent.Future
 
-case class User(userName: String, userPass: String, userId: Option[Int] = None)
+case class User(userName: String, userPass: String, isAdmin: Boolean = false, userId: Option[Int] = None)
 
 final class UserTable(tag: Tag)
   extends Table[User](tag, "users") {
@@ -13,10 +13,11 @@ final class UserTable(tag: Tag)
   val userName = column[String]("user_name", O.Unique)
   // TODO salt this?
   val userPass = column[String]("user_pass")
+  val isAdmin = column[Boolean]("is_admin")
   val userId = column[Int]("user_ID", O.PrimaryKey, O.AutoInc)
 
   def * =
-    (userName, userPass, userId.?) <> (User.apply _ tupled, User.unapply)
+    (userName, userPass, isAdmin, userId.?) <> (User.apply _ tupled, User.unapply)
 
 }
 
