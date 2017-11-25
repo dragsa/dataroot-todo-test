@@ -10,11 +10,14 @@ case class User(userName: String, userPass: String, isAdmin: Boolean = false, us
 final class UserTable(tag: Tag)
   extends Table[User](tag, "users") {
 
-  val userName = column[String]("user_name", O.Unique)
+  def userName = column[String]("user_name", O.Unique)
+
   // TODO salt this?
-  val userPass = column[String]("user_pass")
-  val isAdmin = column[Boolean]("is_admin")
-  val userId = column[Int]("user_ID", O.PrimaryKey, O.AutoInc)
+  def userPass = column[String]("user_pass")
+
+  def isAdmin = column[Boolean]("is_admin")
+
+  def userId = column[Int]("user_ID", O.PrimaryKey, O.AutoInc)
 
   def * =
     (userName, userPass, isAdmin, userId.?) <> (User.apply _ tupled, User.unapply)

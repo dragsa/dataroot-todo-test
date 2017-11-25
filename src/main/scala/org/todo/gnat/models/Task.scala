@@ -5,14 +5,20 @@ import slick.lifted.Tag
 
 import scala.concurrent.Future
 
-case class Task(taskName: String, taskBody: Option[String] = None, taskOwner: Int, taskId: Option[Int] = None)
+case class Task(taskName: String, taskBody: Option[String] = None, taskState: String = "New", taskOwner: Int, taskId: Option[Int] = None)
 
 final class TaskTable(tag: Tag)
   extends Table[Task](tag, "tasks") {
 
   def taskName = column[String]("task_name")
+
   def taskBody = column[String]("task_body")
+
+  // TODO switch to enums here
+  def taskState = column[String]("task_state")
+
   def taskOwner = column[Int]("task_owner")
+
   def taskId = column[Int]("task_ID", O.PrimaryKey, O.AutoInc)
 
   def userFk =
@@ -21,7 +27,7 @@ final class TaskTable(tag: Tag)
   def uniqueTaskPerUser = index("task_user_unique", (taskName, taskOwner), unique = true)
 
   def * =
-    (taskName, taskBody.?, taskOwner, taskId.?) <> (Task.apply _ tupled, Task.unapply)
+    (taskName, taskBody.?, taskState, taskOwner, taskId.?) <> (Task.apply _ tupled, Task.unapply)
 }
 
 object TaskTable {
