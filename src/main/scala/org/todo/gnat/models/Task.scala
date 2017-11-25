@@ -1,4 +1,4 @@
-package models
+package org.todo.gnat.models
 
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Tag

@@ -1,11 +1,11 @@
-package models
+package org.todo.gnat.models
 
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.Tag
 
 import scala.concurrent.Future
 
-case class User(taskName: String, userPass: String, userId: Option[Int] = None)
+case class User(userName: String, userPass: String, userId: Option[Int] = None)
 
 final class UserTable(tag: Tag)
   extends Table[User](tag, "users") {
@@ -49,5 +49,10 @@ class UserRepository(implicit db: Database) {
   def getById(userId: Int): Future[Option[User]] = {
     db.run(
       userTableQuery.filter(_.userId === userId).result.headOption)
+  }
+
+  def getByName(userName: String): Future[Option[User]] = {
+    db.run(
+      userTableQuery.filter(_.userName === userName).result.headOption)
   }
 }
