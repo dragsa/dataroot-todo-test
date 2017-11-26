@@ -8,6 +8,7 @@ import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
 import org.todo.gnat.fsm.{LoggedOut, Session}
 import org.todo.gnat.models.{TaskRepository, User, UserRepository}
+import org.todo.gnat.parser.{CommandConfig, CommandConfigHolder}
 import slick.jdbc.PostgresProfile.api._
 import slick.jdbc.meta.MTable
 
@@ -53,11 +54,16 @@ object Main extends StrictLogging {
     fillTablesWithDefaultData
     val scanner = new Scanner(System.in)
     val system = ActorSystem("todoSystem")
+    val commandParser = CommandConfig.parser
     val todoActor = system.actorOf(MainRELPActor.props(Session("session one", LoggedOut)), name = "todoActor")
     breakable(
       while (true) {
         println("type some command:")
         val currentCommand = scanner.nextLine
+        commandParser.parse(currentCommand.split(" ").toSeq, CommandConfigHolder()) match {
+          case Some(config) => println(config)
+          case _ => println("")
+        }
         implicit val timeout = Timeout(3 seconds)
         if (currentCommand.equals("exit")) {
           println("Bye-bye!")

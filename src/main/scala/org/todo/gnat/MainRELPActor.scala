@@ -8,7 +8,7 @@ import org.todo.gnat.models.{TaskRepository, User, UserRepository}
 
 class MainRELPActor(_currentSession: Session, _user: Option[User])(implicit usersRepo: UserRepository, tasksRepo: TaskRepository) extends Actor with ActorLogging with StrictLogging {
 
-  val actorLogger = LoggerFactory.getLogger("dnsProxyLogger")
+  val actorLogger = LoggerFactory.getLogger("RELP actor logger")
   var currentSession = _currentSession
   var currentUser = _user
 

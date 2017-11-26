@@ -3,17 +3,6 @@ package org.todo.gnat.fsm
 import org.todo.gnat.models.User
 
 
-sealed abstract class SessionState
-
-case object LoggedOut extends SessionState
-
-case object LoggedInAdmin extends SessionState
-
-case object LoggedInUser extends SessionState
-
-case class Session(name: String, sessionState: SessionState)
-
-
 sealed trait Command
 
 case class UserCommand(user: User) extends Command
@@ -23,6 +12,16 @@ case class AdminCommand(user: User) extends Command
 case class LogIn(user: User) extends Command
 
 case class LogOut() extends Command
+
+object Command {
+  def apply(kind: String, user: User): Command = kind match {
+    case "login" => LogIn(user)
+    case "logout" => LogOut()
+    case "taskList" | "taskAdd" | "taskDelete" | "taskMarkDone" | "taskMarkOpen" => UserCommand(user)
+      // TODO add these later, admin-level tasks
+    case "userList" | "userAdd" | "userDelete" => AdminCommand(user)
+  }
+}
 
 //case class AdminUserList(override val user: User) extends AdminCommand(user)
 //
@@ -39,6 +38,16 @@ case class LogOut() extends Command
 //case class UserTaskMarkDone(override val user: User) extends UserCommand(user)
 //
 //case class UserTaskMarkNew(override val user: User) extends UserCommand(user)
+
+sealed trait SessionState
+
+case object LoggedOut extends SessionState
+
+case object LoggedInAdmin extends SessionState
+
+case object LoggedInUser extends SessionState
+
+case class Session(name: String, sessionState: SessionState)
 
 object Session {
 
