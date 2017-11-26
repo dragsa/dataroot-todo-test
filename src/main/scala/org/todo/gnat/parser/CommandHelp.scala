@@ -1,10 +1,12 @@
 package org.todo.gnat.parser
 
+// TODO no validation with such plain strings, should be changed
 case class CommandConfigHolder(user: String = "",
                                pass: String = "",
                                taskType: String = "",
                                taskName: String = "",
-                               taskDescription: String = "")
+                               taskDescription: String = "",
+                               taskState: String = "")
 
 object CommandConfig {
   val parser = new scopt.OptionParser[CommandConfigHolder]("") {
@@ -46,7 +48,7 @@ object CommandConfig {
         c.copy(taskDescription = x)
       } text "description of task to create (optional, empty by default)",
       opt[String]('s', "state") optional() action { (x, c) =>
-        c.copy(taskType = x)
+        c.copy(taskState = x)
       } text "state of task to create (optional, 'open' by default)\n",
     ) text "create task with given parameters"
 

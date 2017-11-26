@@ -18,26 +18,10 @@ object Command {
     case "login" => LogIn(user)
     case "logout" => LogOut()
     case "taskList" | "taskAdd" | "taskDelete" | "taskMarkDone" | "taskMarkOpen" => UserCommand(user)
-      // TODO add these later, admin-level tasks
+      // TODO add these later, admin-level commands
     case "userList" | "userAdd" | "userDelete" => AdminCommand(user)
   }
 }
-
-//case class AdminUserList(override val user: User) extends AdminCommand(user)
-//
-//case class AdminUserAdd(override val user: User) extends AdminCommand(user)
-//
-//case class AdminUserDelete(override val user: User) extends AdminCommand(user)
-//
-//case class UserTaskList(override val user: User) extends UserCommand(user)
-//
-//case class UserTaskAdd(override val user: User) extends UserCommand(user)
-//
-//case class UserTaskDelete(override val user: User) extends UserCommand(user)
-//
-//case class UserTaskMarkDone(override val user: User) extends UserCommand(user)
-//
-//case class UserTaskMarkNew(override val user: User) extends UserCommand(user)
 
 sealed trait SessionState
 
