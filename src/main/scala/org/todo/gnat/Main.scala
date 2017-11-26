@@ -52,27 +52,29 @@ object Main extends StrictLogging {
   def main(args: Array[String]): Unit = {
     initTables
     fillTablesWithDefaultData
+    println("Welcome to TODO CLI!")
     val scanner = new Scanner(System.in)
     val system = ActorSystem("todoSystem")
     val commandParser = CommandConfig.parser
     val todoActor = system.actorOf(MainRELPActor.props(Session("session one", LoggedOut)), name = "todoActor")
     breakable(
       while (true) {
-        println("type some command:")
+        print("$ " + ">")
         val currentCommand = scanner.nextLine
+        val probablyValidCommand = currentCommand.split(" ").headOption
         commandParser.parse(currentCommand.split(" ").toSeq, CommandConfigHolder()) match {
-          case Some(config) => println(config)
-          case _ => println("")
-        }
-        implicit val timeout = Timeout(3 seconds)
-        if (currentCommand.equals("exit")) {
-          println("Bye-bye!")
-          system.terminate
-          break
-        }
-        else {
-          val actorReply = Await.result(todoActor ? currentCommand, Duration.Inf)
-          println(actorReply)
+          case Some(config) =>
+            implicit val timeout = Timeout(10 seconds)
+            if (currentCommand.equals("exit")) {
+              println("Bye-bye!")
+              system.terminate
+              break
+            }
+            else {
+              val actorReply = Await.result(todoActor ? (probablyValidCommand.get, config), 15 seconds)
+              println("TODO reply: " + actorReply)
+            }
+          case _ => Unit
         }
       }
     )

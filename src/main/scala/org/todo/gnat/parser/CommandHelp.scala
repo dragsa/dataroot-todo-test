@@ -17,6 +17,9 @@ object CommandConfig {
     // TODO there seems to be no way to add help specialized for each command
     help("help").text("prints this usage text\n")
 
+    cmd("exit").
+      text("exit from TODO\n")
+
     cmd("login") children(
       opt[String]('u', "user") required() action { (x, c) =>
         c.copy(user = x)

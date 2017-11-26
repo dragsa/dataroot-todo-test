@@ -3,20 +3,20 @@ package org.todo.gnat.fsm
 import org.todo.gnat.models.User
 
 
-sealed trait Command
+sealed abstract class Command(user: User)
 
-case class UserCommand(user: User) extends Command
+case class UserCommand(user: User) extends Command(user)
 
-case class AdminCommand(user: User) extends Command
+case class AdminCommand(user: User) extends Command(user)
 
-case class LogIn(user: User) extends Command
+case class LogIn(user: User) extends Command(user)
 
-case class LogOut() extends Command
+case class LogOut(user: User) extends Command(user)
 
 object Command {
   def apply(kind: String, user: User): Command = kind match {
     case "login" => LogIn(user)
-    case "logout" => LogOut()
+    case "logout" => LogOut(user)
     case "taskList" | "taskAdd" | "taskDelete" | "taskMarkDone" | "taskMarkOpen" => UserCommand(user)
       // TODO add these later, admin-level commands
     case "userList" | "userAdd" | "userDelete" => AdminCommand(user)
@@ -43,21 +43,21 @@ object Session {
       case LoggedOut =>
         command match {
           case LogIn(user) => Left(newState(session, if (user.isAdmin) LoggedInAdmin else LoggedInUser))
-          case LogOut() => Left(session)
+          case LogOut(_) => Left(session)
           case _ => Right("you need to login first")
         }
       case LoggedInUser =>
         command match {
-          case LogIn(user) => Right(user + " is already logged in")
+          case LogIn(_) => Right("you need to logout first")
           case AdminCommand(user) => if (user.isAdmin) Left(session) else Right("only admins case use this command")
           case UserCommand(_) => Left(session)
-          case LogOut() => Left(newState(session, LoggedOut))
+          case LogOut(_) => Left(newState(session, LoggedOut))
         }
       case LoggedInAdmin =>
         command match {
-          case LogIn(user) => Right(user + " is already logged in")
+          case LogIn(_) => Right("you need to logout first")
           case AdminCommand(_) | UserCommand(_) => Left(session)
-          case LogOut() => Left(newState(session, LoggedOut))
+          case LogOut(_) => Left(newState(session, LoggedOut))
         }
     }
   }

@@ -59,4 +59,9 @@ class UserRepository(implicit db: Database) {
     db.run(
       userTableQuery.filter(_.userName === userName).result.headOption)
   }
+
+  def getAll: Future[Seq[User]] = {
+    db.run(
+      userTableQuery.result)
+  }
 }
