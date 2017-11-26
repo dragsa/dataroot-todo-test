@@ -2,7 +2,11 @@ package org.todo.gnat
 
 import java.util.Scanner
 
-import com.typesafe.scalalogging.LazyLogging
+import akka.actor.ActorSystem
+import akka.pattern.ask
+import akka.util.Timeout
+import com.typesafe.scalalogging.StrictLogging
+import org.todo.gnat.fsm.{LoggedOut, Session}
 import org.todo.gnat.models.{TaskRepository, User, UserRepository}
 import slick.jdbc.PostgresProfile.api._
 import slick.jdbc.meta.MTable
@@ -12,12 +16,12 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.util.control.Breaks._
 
-object Main extends LazyLogging {
+object Main extends StrictLogging {
 
   implicit val db = Database.forConfig("todo")
 
-  val usersRepository = new UserRepository
-  val tasksRepository = new TaskRepository
+  implicit val usersRepository = new UserRepository
+  implicit val tasksRepository = new TaskRepository
   val tables = Map("users" -> usersRepository.userTableQuery, "tasks" -> tasksRepository.taskTableQuery)
   val defaultUsers = List(User("data", "data", isAdmin = true), User("root", "root", isAdmin = true))
 
@@ -35,11 +39,11 @@ object Main extends LazyLogging {
 
   // TODO switch to future composition here
   def fillTablesWithDefaultData: Unit = {
-    defaultUsers.foreach(userToCreate => Await.result(usersRepository.getByName(userToCreate.userName).flatMap {
+    defaultUsers.foreach(userToCreate => usersRepository.getByName(userToCreate.userName).flatMap {
       case None =>
         logger.info("creating user " + userToCreate.userName)
         usersRepository.createOne(userToCreate)
-    }, Duration.Inf))
+    })
   }
 
   def exec[T](action: DBIO[T]): T = Await.result(db.run(action), 10.seconds)
@@ -48,14 +52,23 @@ object Main extends LazyLogging {
     initTables
     fillTablesWithDefaultData
     val scanner = new Scanner(System.in)
+    val system = ActorSystem("todoSystem")
+    val todoActor = system.actorOf(MainRELPActor.props(Session("session one", LoggedOut)), name = "todoActor")
     breakable(
       while (true) {
-        println("provide input:")
+        println("type some command:")
         val currentCommand = scanner.nextLine
-        if (currentCommand.equals("exit")) break else println(currentCommand)
+        implicit val timeout = Timeout(3 seconds)
+        if (currentCommand.equals("exit")) {
+          println("Bye-bye!")
+          system.terminate
+          break
+        }
+        else {
+          val actorReply = Await.result(todoActor ? currentCommand, Duration.Inf)
+          println(actorReply)
+        }
       }
     )
-    // TODO this will be removed as soon as user interaction part will be in place
-    Thread.sleep(5000)
   }
 }

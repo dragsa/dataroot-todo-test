@@ -14,7 +14,7 @@ final class TaskTable(tag: Tag)
 
   def taskBody = column[String]("task_body")
 
-  // TODO switch to enums here
+  // TODO switch to enums here?
   def taskState = column[String]("task_state")
 
   def taskOwner = column[Int]("task_owner")
