@@ -8,7 +8,7 @@ import org.todo.gnat.models.{Task, TaskRepository, User, UserRepository}
 import org.todo.gnat.parser.CommandConfigHolder
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 class MainRELPActor(_currentSession: Session, _user: User = User("fake_service_user", "fake_service_pass"))(implicit usersRepo: UserRepository, tasksRepo: TaskRepository)
   extends Actor with ActorLogging with StrictLogging {
@@ -39,9 +39,7 @@ class MainRELPActor(_currentSession: Session, _user: User = User("fake_service_u
                   actorLogger.info("current session state is: " + currentSession.sessionState)
                   senderLocal ! message
               }
-              case None =>
-                actorLogger.info("current session state is: " + currentSession.sessionState)
-                senderLocal ! "user or pass is wrong"
+              case None => processReject("user or pass is wrong")
             }
             case Failure(message) => senderLocal ! message
           }
@@ -52,33 +50,21 @@ class MainRELPActor(_currentSession: Session, _user: User = User("fake_service_u
               senderLocal ! "user " + currentUser.userName + " successfully logged out"
               currentSession = newSession
               currentUser = User("fake_service_user", "fake_service_pass")
-            case Right(message) =>
-              actorLogger.info("current session state is: " + currentSession.sessionState)
-              senderLocal ! message
+            case Right(message) => processReject(message)
           }
 
         case a@"taskList" =>
           Session.transition(currentSession, Command(a, currentUser)) match {
             case Left(newSession) =>
               actorLogger.info("current session state is changing: " + currentSession.sessionState + " -> " + newSession.sessionState)
+              currentSession = newSession
               commandArgs.taskState match {
-                case "all" => tasksRepo.getAllByUserId(currentUser.userId.get).onComplete {
-                  case Success(tasks) => senderLocal ! "\nnext tasks:\n" + tasks.mkString("\n") + "were fetched"
-                  case Failure(message) => senderLocal ! message
-                }
-                case "open" => tasksRepo.getAllByUserIdAndStatus(currentUser.userId.get, "open").onComplete {
-                  case Success(tasks) => senderLocal ! "\nnext tasks:\n" + tasks.mkString("\n") + "were fetched"
-                  case Failure(message) => senderLocal ! message
-                }
-                case "done" => tasksRepo.getAllByUserIdAndStatus(currentUser.userId.get, "done").onComplete {
-                  case Success(tasks) => senderLocal ! "\nnext tasks:\n" + tasks.mkString("\n") + "were fetched"
-                  case Failure(message) => senderLocal ! message
-                }
-                  currentSession = newSession
+                  // TODO add sealed trait for these, not really required due to parser behavior
+                case "all" => tasksRepo.getAllByUserId(currentUser.userId.get) onComplete processTaskList
+                case "open" => tasksRepo.getAllByUserIdAndStatus(currentUser.userId.get, "open") onComplete processTaskList
+                case "done" => tasksRepo.getAllByUserIdAndStatus(currentUser.userId.get, "done") onComplete processTaskList
               }
-            case Right(message) =>
-              actorLogger.info("current session state is: " + currentSession.sessionState)
-              senderLocal ! message
+            case Right(message) => processReject(message)
           }
 
         case a@"taskAdd" =>
@@ -86,13 +72,10 @@ class MainRELPActor(_currentSession: Session, _user: User = User("fake_service_u
             case Left(newSession) =>
               actorLogger.info("current session state is changing: " + currentSession.sessionState + " -> " + newSession.sessionState)
               tasksRepo.createOne(Task(commandArgs.taskName, Option(commandArgs.taskDescription), currentUser.userId.get)).onComplete {
-                case Success(task) => senderLocal ! "task " + task.taskName + " was created"
-                case Failure(message) => senderLocal ! message
+                processTaskChange[Task]("created")
               }
               currentSession = newSession
-            case Right(message) =>
-              actorLogger.info("current session state is: " + currentSession.sessionState)
-              senderLocal ! message
+            case Right(message) => processReject(message)
           }
 
         case a@"taskDelete" =>
@@ -100,13 +83,10 @@ class MainRELPActor(_currentSession: Session, _user: User = User("fake_service_u
             case Left(newSession) =>
               actorLogger.info("current session state is changing: " + currentSession.sessionState + " -> " + newSession.sessionState)
               tasksRepo.deleteOneByUserIdAndName(currentUser.userId.get, commandArgs.taskName).onComplete {
-                case Success(tasks) => senderLocal ! tasks + " task were deleted"
-                case Failure(message) => senderLocal ! message
+                processTaskChange[Int]("deleted")
               }
               currentSession = newSession
-            case Right(message) =>
-              actorLogger.info("current session state is: " + currentSession.sessionState)
-              senderLocal ! message
+            case Right(message) => processReject(message)
           }
 
         case a@("taskMarkDone" | "taskMarkOpen") =>
@@ -114,17 +94,30 @@ class MainRELPActor(_currentSession: Session, _user: User = User("fake_service_u
             case Left(newSession) =>
               actorLogger.info("current session state is changing: " + currentSession.sessionState + " -> " + newSession.sessionState)
               tasksRepo.updateOneStateByUserIdAndName(currentUser.userId.get, commandArgs.taskName, a.asInstanceOf[String].takeRight(4).toLowerCase).onComplete {
-                case Success(tasks) => senderLocal ! tasks + " task were updated"
-                case Failure(message) => senderLocal ! message
+                processTaskChange[Int]("updated")
               }
               currentSession = newSession
-            case Right(message) =>
-              actorLogger.info("current session state is: " + currentSession.sessionState)
-              senderLocal ! message
+            case Right(message) => processReject(message)
           }
+
         case _ => senderLocal ! "I've heard your message and it makes sense for me, yet it is not supported; my session state is " + currentSession.sessionState
       }
     }
+  }
+
+  private def processReject(message: String): Unit = {
+    actorLogger.info("current session state is: " + currentSession.sessionState)
+    senderLocal ! message
+  }
+
+  private def processTaskChange[T](operation: String): PartialFunction[Try[T], Unit] = {
+    case Success(tasks) => senderLocal ! tasks + " task " + operation
+    case Failure(message) => senderLocal ! message
+  }
+
+  private def processTaskList: PartialFunction[Try[Seq[Task]], Unit] = {
+    case Success(tasks) => senderLocal ! (if (tasks.isEmpty) "no tasks were fetched" else "next tasks\n" + tasks.mkString("\n") + "\nwere fetched")
+    case Failure(message) => senderLocal ! message
   }
 }
 

@@ -76,9 +76,9 @@ object Main extends StrictLogging {
               println("here comes the help!")
             }
             else {
-              // safe for get here, parser did all the command syntax check
+              // safe to do 'get' on Option here, parser did all the command syntax check
               val actorReply = Await.result(todoActor ? (probablyValidCommand.get, config), 15 seconds)
-              println("TODO reply: " + actorReply)
+              println("TODO reply:\n" + actorReply)
             }
           case _ => Unit
         }
