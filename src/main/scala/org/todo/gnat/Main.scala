@@ -70,6 +70,9 @@ object Main extends StrictLogging {
               system.terminate
               break
             }
+            else if (currentCommand.equals("--help")) {
+              println("here comes the help!")
+            }
             else {
               val actorReply = Await.result(todoActor ? (probablyValidCommand.get, config), 15 seconds)
               println("TODO reply: " + actorReply)

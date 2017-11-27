@@ -43,13 +43,13 @@ object Session {
       case LoggedOut =>
         command match {
           case LogIn(user) => Left(newState(session, if (user.isAdmin) LoggedInAdmin else LoggedInUser))
-          case LogOut(_) => Left(session)
+          case LogOut(_) => Right("you need to login first")
           case _ => Right("you need to login first")
         }
       case LoggedInUser =>
         command match {
           case LogIn(_) => Right("you need to logout first")
-          case AdminCommand(user) => if (user.isAdmin) Left(session) else Right("only admins case use this command")
+          case AdminCommand(user) => if (user.isAdmin) Left(session) else Right("only admins can use this command")
           case UserCommand(_) => Left(session)
           case LogOut(_) => Left(newState(session, LoggedOut))
         }

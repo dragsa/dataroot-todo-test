@@ -3,7 +3,6 @@ package org.todo.gnat.parser
 // TODO no validation with such plain strings, should be changed
 case class CommandConfigHolder(user: String = "",
                                pass: String = "",
-                               taskType: String = "",
                                taskName: String = "",
                                taskDescription: String = "",
                                taskState: String = "")
@@ -34,11 +33,11 @@ object CommandConfig {
 
     cmd("taskList") children (
       arg[String]("<type>") required() validate { x =>
-        if (x.equals("*") || x.equals("open") || x.equals("done")) success
-        else failure("\"type\" must be '*', 'open' or 'done'")
+        if (x.equals("all") || x.equals("open") || x.equals("done")) success
+        else failure("\"type\" must be 'all', 'open' or 'done'")
       }
         action { (x, c) =>
-        c.copy(taskType = x)
+        c.copy(taskState = x)
       }
         text "task type to display\n"
       ) text "display tasks meeting given criteria"

@@ -5,7 +5,7 @@ import slick.lifted.Tag
 
 import scala.concurrent.Future
 
-case class Task(taskName: String, taskDescription: Option[String] = None, taskState: String = "open", taskOwner: Int, taskId: Option[Int] = None)
+case class Task(taskName: String, taskDescription: Option[String] = None, taskOwner: Int, taskState: String = "open", taskId: Option[Int] = None)
 
 final class TaskTable(tag: Tag)
   extends Table[Task](tag, "tasks") {
@@ -27,7 +27,7 @@ final class TaskTable(tag: Tag)
   def uniqueTaskPerUser = index("task_user_unique", (taskName, taskOwner), unique = true)
 
   def * =
-    (taskName, taskDescription.?, taskState, taskOwner, taskId.?) <> (Task.apply _ tupled, Task.unapply)
+    (taskName, taskDescription.?, taskOwner, taskState, taskId.?) <> (Task.apply _ tupled, Task.unapply)
 }
 
 object TaskTable {
@@ -52,13 +52,44 @@ class TaskRepository(implicit db: Database) {
         .update(task))
   }
 
+  def updateOneStateByUserIdAndName(userId: Int, name: String, newState: String): Future[Int] = {
+    db.run(
+      taskTableQuery
+        .filter(task => task.taskOwner === userId && task.taskName === task.taskName && task.taskState =!= newState).
+        map(_.taskState).update(newState))
+  }
+
   def deleteOne(taskId: Int): Future[Int] = {
     db.run(taskTableQuery.filter(_.taskId === taskId).delete)
+  }
+
+  def deleteOneByUserIdAndName(userId: Int, name: String): Future[Int] = {
+    db.run(taskTableQuery.filter(task => task.taskOwner === userId && task.taskName === name).delete)
   }
 
   def getById(taskId: Int): Future[Option[Task]] = {
     db.run(
       taskTableQuery.filter(_.taskId === taskId).result.headOption)
+  }
+
+  def getByName(taskName: String): Future[Option[Task]] = {
+    db.run(
+      taskTableQuery.filter(_.taskName === taskName).result.headOption)
+  }
+
+  def getAllByUserId(userId: Int): Future[Seq[Task]] = {
+    db.run(
+      taskTableQuery.filter(_.taskOwner === userId).result)
+  }
+
+  def getAllByUserIdAndStatus(userId: Int, state: String): Future[Seq[Task]] = {
+    db.run(
+      taskTableQuery.filter(task => task.taskOwner === userId && task.taskState === state).result)
+  }
+
+  def getAll: Future[Seq[Task]] = {
+    db.run(
+      taskTableQuery.result)
   }
 }
 
