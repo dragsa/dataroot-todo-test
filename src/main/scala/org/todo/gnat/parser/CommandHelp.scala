@@ -1,8 +1,8 @@
 package org.todo.gnat.parser
 
 // TODO no validation with such plain strings, should be changed
-case class CommandConfigHolder(user: String = "",
-                               pass: String = "",
+case class CommandConfigHolder(userName: String = "",
+                               userPass: String = "",
                                taskName: String = "",
                                taskDescription: String = "",
                                taskState: String = "")
@@ -21,15 +21,14 @@ object CommandConfig {
 
     cmd("login") children(
       opt[String]('u', "user") required() action { (x, c) =>
-        c.copy(user = x)
+        c copy (userName = x)
       } text "user name for login",
       opt[String]('p', "pass") required() action { (x, c) =>
-        c.copy(pass = x)
+        c copy (userPass = x)
       } text "user pass for login\n"
     ) text "login user into TODO with given credentials"
 
-    cmd("logout").
-      text("logout current user from TODO\n")
+    cmd("logout") text "logout current user from TODO\n"
 
     cmd("taskList") children (
       arg[String]("<type>") required() validate { x =>
@@ -37,38 +36,38 @@ object CommandConfig {
         else failure("\"type\" must be 'all', 'open' or 'done'")
       }
         action { (x, c) =>
-        c.copy(taskState = x)
+        c copy (taskState = x)
       }
         text "task type to display\n"
       ) text "display tasks meeting given criteria"
 
     cmd("taskAdd") children(
       opt[String]('n', "name") required() action { (x, c) =>
-        c.copy(taskName = x)
+        c copy (taskName = x)
       } text "name of task to create",
       opt[String]('d', "description") optional() action { (x, c) =>
-        c.copy(taskDescription = x)
+        c copy (taskDescription = x)
       } text "description of task to create (optional, empty by default)",
       opt[String]('s', "state") optional() action { (x, c) =>
-        c.copy(taskState = x)
+        c copy (taskState = x)
       } text "state of task to create (optional, 'open' by default)\n",
     ) text "create task with given parameters"
 
     cmd("taskDelete") children (
       arg[String]("<name>") required() action { (x, c) =>
-        c.copy(taskName = x)
+        c copy (taskName = x)
       } text "name of task to delete\n"
       ) text "delete task by given name"
 
     cmd("taskMarkDone") children (
       arg[String]("<name>") required() action { (x, c) =>
-        c.copy(taskName = x)
+        c copy (taskName = x)
       } text "name of task to mark as 'done'\n"
       ) text "mark task as 'done' by given name"
 
     cmd("taskMarkOpen") children (
       arg[String]("<name>") required() action { (x, c) =>
-        c.copy(taskName = x)
+        c copy (taskName = x)
       } text "name of task to mark as 'open'\n"
       ) text "mark task as 'open' by given name"
   }

@@ -26,32 +26,34 @@ object Main extends StrictLogging {
   val tables = Map("users" -> usersRepository.userTableQuery, "tasks" -> tasksRepository.taskTableQuery)
   val defaultUsers = List(User("data", "data", isAdmin = true), User("root", "root", isAdmin = true))
 
-  def initTables: Unit = {
+  def initTables(): Unit = {
     tables.keys.foreach(tableCreator)
   }
 
   // TODO switch to future composition here
-  def tableCreator(tableName: String) = {
+  def tableCreator(tableName: String): Unit = {
     Await.result(db.run(MTable.getTables(tableName)).flatMap(matchedTables => if (matchedTables.isEmpty) {
       logger.info(tableName + " table doesn't exist, creating...")
       db.run(tables(tableName).schema.create)
-    } else Future {}).andThen { case _ => logger.info(tableName + " table check finished") }, Duration.Inf)
+    } else Future.successful()).andThen { case _ => logger.info(tableName + " table check finished") }, Duration.Inf)
   }
 
   // TODO switch to future composition here
-  def fillTablesWithDefaultData: Unit = {
-    defaultUsers.foreach(userToCreate => usersRepository.getByName(userToCreate.userName).flatMap {
+  def fillTablesWithDefaultData(): Unit = {
+    defaultUsers.foreach(userToCreate => Await.result(usersRepository.getByName(userToCreate.userName).flatMap {
       case None =>
         logger.info("creating user " + userToCreate.userName)
         usersRepository.createOne(userToCreate)
-    })
+      case Some(_) =>
+        Future.successful()
+    }, Duration.Inf))
   }
 
   def exec[T](action: DBIO[T]): T = Await.result(db.run(action), 10.seconds)
 
   def main(args: Array[String]): Unit = {
-    initTables
-    fillTablesWithDefaultData
+    initTables()
+    fillTablesWithDefaultData()
     println("Welcome to TODO CLI!")
     val scanner = new Scanner(System.in)
     val system = ActorSystem("todoSystem")
@@ -74,6 +76,7 @@ object Main extends StrictLogging {
               println("here comes the help!")
             }
             else {
+              // safe for get here, parser did all the command syntax check
               val actorReply = Await.result(todoActor ? (probablyValidCommand.get, config), 15 seconds)
               println("TODO reply: " + actorReply)
             }

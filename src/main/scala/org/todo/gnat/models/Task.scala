@@ -55,7 +55,7 @@ class TaskRepository(implicit db: Database) {
   def updateOneStateByUserIdAndName(userId: Int, name: String, newState: String): Future[Int] = {
     db.run(
       taskTableQuery
-        .filter(task => task.taskOwner === userId && task.taskName === task.taskName && task.taskState =!= newState).
+        .filter(task => task.taskOwner === userId && task.taskName === name && task.taskState =!= newState).
         map(_.taskState).update(newState))
   }
 

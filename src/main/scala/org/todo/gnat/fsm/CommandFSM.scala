@@ -15,6 +15,7 @@ case class LogOut(user: User) extends Command(user)
 
 object Command {
   def apply(kind: String, user: User): Command = kind match {
+      // TODO ugly factory, move to enum all of this
     case "login" => LogIn(user)
     case "logout" => LogOut(user)
     case "taskList" | "taskAdd" | "taskDelete" | "taskMarkDone" | "taskMarkOpen" => UserCommand(user)
