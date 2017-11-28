@@ -35,9 +35,7 @@ class MainRELPActor(_currentSession: Session, _user: User = User("fake_service_u
                   senderLocal ! "user " + userFromDb.userName + " successfully logged in"
                   currentSession = newSession
                   currentUser = userFromDb
-                case Right(message) =>
-                  actorLogger.info("current session state is: " + currentSession.sessionState)
-                  senderLocal ! message
+                case Right(message) => processReject("user or pass is wrong")
               }
               case None => processReject("user or pass is wrong")
             }
@@ -67,6 +65,7 @@ class MainRELPActor(_currentSession: Session, _user: User = User("fake_service_u
             case Right(message) => processReject(message)
           }
 
+          // TODO taskAdd, taskDelete, taskMark* should be simplified
         case a@"taskAdd" =>
           Session.transition(currentSession, Command(a, currentUser)) match {
             case Left(newSession) =>
