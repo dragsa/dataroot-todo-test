@@ -47,6 +47,19 @@ object Main extends StrictLogging {
       case Some(_) =>
         Future.successful()
     }, Duration.Inf))
+
+  }
+
+  def fillTablesWithCustomData(userToCreate: User): Unit = {
+    Thread.sleep(1000)
+    Await.result(usersRepository.getByName(userToCreate.userName).flatMap {
+      case None =>
+        logger.info("creating user " + userToCreate.userName)
+        usersRepository.createOne(userToCreate)
+      case Some(_) =>
+        Future.successful()
+    }, Duration.Inf)
+    fillTablesWithCustomData(User("data" + System.currentTimeMillis(), "data", isAdmin = true))
   }
 
   def exec[T](action: DBIO[T]): T = Await.result(db.run(action), 10.seconds)
@@ -54,6 +67,10 @@ object Main extends StrictLogging {
   def main(args: Array[String]): Unit = {
     initTables()
     fillTablesWithDefaultData()
+    fillTablesWithCustomData(User("data" + System.currentTimeMillis(), "data", isAdmin = true))
+    while (true) {
+
+    }
     println("Welcome to TODO CLI!")
     val scanner = new Scanner(System.in)
     val system = ActorSystem("todoSystem")

@@ -1,0 +1,12 @@
+version: '3'
+services:
+  todo_postgresql:
+    image: "postgres"
+    ports:
+    - "5432:5432"
+    environment:
+    - POSTGRES_USER=pguser
+    - POSTGRES_PASSWORD=mysecretpassword
+
+  todo_app:
+    image: "dataroot/todo:latest"
