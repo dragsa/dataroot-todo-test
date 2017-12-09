@@ -1,7 +1,6 @@
 package org.todo.gnat
 
 import java.util.Scanner
-
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
@@ -11,11 +10,11 @@ import org.todo.gnat.models.{TaskRepository, User, UserRepository}
 import org.todo.gnat.parser.{CommandConfig, CommandConfigHolder}
 import slick.jdbc.PostgresProfile.api._
 import slick.jdbc.meta.MTable
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.util.control.Breaks._
+import com.typesafe.config.{Config, ConfigFactory}
 
 object Main extends StrictLogging {
 
@@ -51,7 +50,6 @@ object Main extends StrictLogging {
   }
 
   def fillTablesWithCustomData(userToCreate: User): Unit = {
-    Thread.sleep(1000)
     Await.result(usersRepository.getByName(userToCreate.userName).flatMap {
       case None =>
         logger.info("creating user " + userToCreate.userName)
@@ -59,7 +57,6 @@ object Main extends StrictLogging {
       case Some(_) =>
         Future.successful()
     }, Duration.Inf)
-    fillTablesWithCustomData(User("data" + System.currentTimeMillis(), "data", isAdmin = true))
   }
 
   def exec[T](action: DBIO[T]): T = Await.result(db.run(action), 10.seconds)
@@ -67,9 +64,10 @@ object Main extends StrictLogging {
   def main(args: Array[String]): Unit = {
     initTables()
     fillTablesWithDefaultData()
-    fillTablesWithCustomData(User("data" + System.currentTimeMillis(), "data", isAdmin = true))
-    while (true) {
-
+    val config = ConfigFactory.load()
+    while (config.getBoolean("todo.developerMode")) {
+      Thread.sleep(1000)
+      fillTablesWithCustomData(User("data" + System.currentTimeMillis(), "data", isAdmin = false))
     }
     println("Welcome to TODO CLI!")
     val scanner = new Scanner(System.in)
