@@ -63,7 +63,6 @@ object Main extends StrictLogging {
       while (true) {
         print("$ " + ">")
         val currentCommand = scanner.nextLine
-        val probablyValidCommand = currentCommand.split(" ").headOption
         commandParser.parse(currentCommand.split(" ").toSeq, CommandConfigHolder()) match {
           case Some(config) =>
             implicit val timeout = Timeout(10 seconds)
@@ -76,6 +75,7 @@ object Main extends StrictLogging {
               println("here comes the help!")
             }
             else {
+              val probablyValidCommand = currentCommand.split(" ").headOption
               // safe to do 'get' on Option here, parser did all the command syntax check
               val actorReply = Await.result(todoActor ? (probablyValidCommand.get, config), 15 seconds)
               println("TODO reply:\n" + actorReply)
